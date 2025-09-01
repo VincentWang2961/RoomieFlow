@@ -18,10 +18,19 @@
 
 ### ⏳ Future Enhancements
 - Email notification system
-- Frontend time tracking dashboard
 - Usage warnings and limits visualization
 - Calendar integration
 - Mobile app development
+
+### 📊 Visual Booking Chart (New Requirement)
+- **Weekly Booking Calendar**: Interactive visual chart displaying booking schedule
+- **Monday-to-Sunday View**: Weekly view starting from Monday
+- **Time Slot Visualization**: Show morning, midday, and evening sessions
+- **Booking Status Display**: Visual indicators for pending, approved, and rejected bookings
+- **Real-time Updates**: Dynamic updates when bookings are created or status changes
+- **Room-based Filtering**: Ability to view bookings by specific room or property
+- **Color-coded Status**: Different colors for different booking statuses
+- **Click-to-Book**: Interactive functionality to create new bookings directly from chart
 
 ## Project Overview
 A lightweight, web-based accommodation scheduling management system designed for simplicity and ease of use. The system handles accommodation time slot applications and approvals with minimal complexity while maintaining essential functionality for user management, property administration, and flexible time allocation parameters.

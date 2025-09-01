@@ -31,11 +31,11 @@
           <p class="text-gray-600">Welcome to your accommodation management dashboard</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="card">
             <h3 class="text-lg font-medium text-gray-900 mb-2">Quick Stats</h3>
-            <p class="text-gray-600">Overview of your bookings and properties</p>
-            <div class="mt-4 space-y-2">
+            <div class="space-y-2">
               <div class="flex justify-between">
                 <span class="text-sm text-gray-500">Active Bookings:</span>
                 <span class="text-sm font-medium">{{ stats.activeBookings }}</span>
@@ -49,7 +49,6 @@
 
           <div class="card">
             <h3 class="text-lg font-medium text-gray-900 mb-2">Recent Activity</h3>
-            <p class="text-gray-600">Latest booking updates and notifications</p>
             <div class="mt-4">
               <p class="text-sm text-gray-500">No recent activity</p>
             </div>
@@ -67,6 +66,11 @@
             </div>
           </div>
         </div>
+
+        <!-- Weekly Booking Chart -->
+        <div class="card">
+          <WeeklyBookingChart />
+        </div>
       </div>
     </main>
   </div>
@@ -76,9 +80,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import WeeklyBookingChart from '@/components/WeeklyBookingChart.vue'
 
 export default {
   name: 'DashboardView',
+  components: {
+    WeeklyBookingChart
+  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()

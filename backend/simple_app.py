@@ -159,6 +159,151 @@ def get_current_user():
     
     return jsonify({'user': user.to_dict()}), 200
 
+# Add booking models for the chart feature
+class Property(db.Model):
+    __tablename__ = 'properties'
+    
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    owner_id = db.Column(db.String(36), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+class Room(db.Model):
+    __tablename__ = 'rooms'
+    
+    id = db.Column(db.String(36), primary_key=True)
+    property_id = db.Column(db.String(36), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    capacity = db.Column(db.Integer, nullable=False, default=1)
+    description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class BookingApplication(db.Model):
+    __tablename__ = 'booking_applications'
+    
+    id = db.Column(db.String(36), primary_key=True)
+    user_id = db.Column(db.String(36), nullable=False)
+    room_id = db.Column(db.String(36), nullable=False)
+    booking_date = db.Column(db.Date, nullable=False)
+    session_type = db.Column(db.String(10), nullable=False)  # morning, midday, evening
+    status = db.Column(db.String(10), default='pending', nullable=False)  # pending, approved, rejected
+    notes = db.Column(db.Text)
+    duration_value = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved_by = db.Column(db.String(36))
+    approval_notes = db.Column(db.Text)
+
+@app.route('/api/bookings/weekly', methods=['GET'])
+@jwt_required()
+def get_weekly_bookings():
+    """Get weekly booking data for the visual chart"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get week start date (default to current week Monday)
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # Monday of current week
+    
+    week_start_param = request.args.get('week_start')
+    if week_start_param:
+        try:
+            week_start = datetime.strptime(week_start_param, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    # Generate 7 days from Monday to Sunday
+    week_days = []
+    for i in range(7):
+        current_date = week_start + timedelta(days=i)
+        week_days.append({
+            'date': current_date.isoformat(),
+            'day_name': current_date.strftime('%A'),
+            'day_short': current_date.strftime('%a'),
+            'is_today': current_date == today
+        })
+    
+    # Get all bookings for this week
+    week_end = week_start + timedelta(days=6)
+    bookings = db.session.query(BookingApplication).filter(
+        BookingApplication.booking_date >= week_start,
+        BookingApplication.booking_date <= week_end
+    ).all()
+    
+    # Organize bookings by date and session
+    booking_data = {}
+    for booking in bookings:
+        date_str = booking.booking_date.isoformat()
+        if date_str not in booking_data:
+            booking_data[date_str] = {
+                'morning': [],
+                'midday': [],
+                'evening': []
+            }
+        
+        # Get user and room info
+        booking_user = User.query.get(booking.user_id)
+        room = Room.query.get(booking.room_id)
+        property_obj = Property.query.get(room.property_id) if room else None
+        
+        booking_info = {
+            'id': booking.id,
+            'user': booking_user.username if booking_user else 'Unknown',
+            'user_id': booking.user_id,
+            'room_name': room.name if room else 'Unknown Room',
+            'room_id': booking.room_id,
+            'property_name': property_obj.name if property_obj else 'Unknown Property',
+            'status': booking.status,
+            'notes': booking.notes,
+            'duration': booking.duration_value,
+            'created_at': booking.created_at.isoformat() if booking.created_at else None,
+            'can_modify': booking.user_id == current_user_id or user.role == 'admin'
+        }
+        
+        booking_data[date_str][booking.session_type].append(booking_info)
+    
+    return jsonify({
+        'week_start': week_start.isoformat(),
+        'week_days': week_days,
+        'bookings': booking_data,
+        'session_types': ['morning', 'midday', 'evening'],
+        'session_labels': {
+            'morning': 'Morning (0.5 day)',
+            'midday': 'Midday (1 day)',
+            'evening': 'Evening (1 day)'
+        }
+    }), 200
+
+@app.route('/api/properties', methods=['GET'])
+@jwt_required()
+def get_properties():
+    """Get properties for dropdown/filter"""
+    properties = Property.query.filter_by(is_active=True).all()
+    return jsonify({
+        'properties': [{'id': p.id, 'name': p.name} for p in properties]
+    }), 200
+
+@app.route('/api/rooms', methods=['GET'])
+@jwt_required()
+def get_rooms():
+    """Get rooms for a property"""
+    property_id = request.args.get('property_id')
+    if property_id:
+        rooms = Room.query.filter_by(property_id=property_id, is_active=True).all()
+    else:
+        rooms = Room.query.filter_by(is_active=True).all()
+    
+    return jsonify({
+        'rooms': [{'id': r.id, 'name': r.name, 'property_id': r.property_id} for r in rooms]
+    }), 200
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
@@ -178,6 +323,119 @@ if __name__ == '__main__':
             db.session.add(admin_user)
             db.session.commit()
             print("Admin user created (username: admin, password: admin123)")
+        
+        # Create sample data for testing the booking chart
+        from datetime import date, timedelta
+        
+        # Create sample property if it doesn't exist
+        sample_property = Property.query.first()
+        if not sample_property:
+            sample_property = Property(
+                id=str(uuid.uuid4()),
+                name='Sample House',
+                description='A sample property for testing',
+                owner_id=admin_user.id
+            )
+            db.session.add(sample_property)
+            db.session.flush()
+            
+            # Create sample rooms
+            room1 = Room(
+                id=str(uuid.uuid4()),
+                property_id=sample_property.id,
+                name='Living Room',
+                capacity=4,
+                description='Main living area'
+            )
+            room2 = Room(
+                id=str(uuid.uuid4()),
+                property_id=sample_property.id,
+                name='Kitchen',
+                capacity=2,
+                description='Kitchen and dining area'
+            )
+            db.session.add(room1)
+            db.session.add(room2)
+            db.session.flush()
+            
+            # Create sample bookings for this week
+            today = date.today()
+            week_start = today - timedelta(days=today.weekday())  # Monday
+            
+            # Add some sample bookings
+            sample_bookings = [
+                # Monday
+                {
+                    'date': week_start,
+                    'session': 'morning',
+                    'room_id': room1.id,
+                    'status': 'approved',
+                    'notes': 'Morning yoga session'
+                },
+                {
+                    'date': week_start,
+                    'session': 'evening',
+                    'room_id': room2.id,
+                    'status': 'pending',
+                    'notes': 'Dinner preparation'
+                },
+                # Tuesday
+                {
+                    'date': week_start + timedelta(days=1),
+                    'session': 'midday',
+                    'room_id': room1.id,
+                    'status': 'approved',
+                    'notes': 'Team meeting'
+                },
+                # Wednesday
+                {
+                    'date': week_start + timedelta(days=2),
+                    'session': 'morning',
+                    'room_id': room2.id,
+                    'status': 'rejected',
+                    'notes': 'Early breakfast'
+                },
+                {
+                    'date': week_start + timedelta(days=2),
+                    'session': 'evening',
+                    'room_id': room1.id,
+                    'status': 'approved',
+                    'notes': 'Movie night'
+                },
+                # Friday
+                {
+                    'date': week_start + timedelta(days=4),
+                    'session': 'midday',
+                    'room_id': room2.id,
+                    'status': 'pending',
+                    'notes': 'Lunch party'
+                },
+                # Sunday
+                {
+                    'date': week_start + timedelta(days=6),
+                    'session': 'morning',
+                    'room_id': room1.id,
+                    'status': 'approved',
+                    'notes': 'Sunday cleanup'
+                }
+            ]
+            
+            for booking_data in sample_bookings:
+                duration_map = {'morning': 0.5, 'midday': 1.0, 'evening': 1.0}
+                booking = BookingApplication(
+                    id=str(uuid.uuid4()),
+                    user_id=admin_user.id,
+                    room_id=booking_data['room_id'],
+                    booking_date=booking_data['date'],
+                    session_type=booking_data['session'],
+                    status=booking_data['status'],
+                    notes=booking_data['notes'],
+                    duration_value=duration_map[booking_data['session']]
+                )
+                db.session.add(booking)
+            
+            db.session.commit()
+            print("Sample property, rooms, and bookings created!")
     
     print("Starting server on http://localhost:5001")
     app.run(debug=True, host='0.0.0.0', port=5001)
