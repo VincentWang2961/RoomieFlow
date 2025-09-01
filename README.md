@@ -124,6 +124,7 @@ A lightweight, web-based accommodation scheduling management system designed for
 - `GET /api/bookings/{id}` - Get booking details
 - `PUT /api/bookings/{id}/approve` - Approve booking
 - `PUT /api/bookings/{id}/reject` - Reject booking
+- `GET /api/bookings/weekly` - Get weekly booking chart data (New!)
 
 ## 🔧 Configuration
 
@@ -145,6 +146,31 @@ The system supports three session types:
 
 Weekly limits are configurable per property with shared time pools between users.
 
+## 📊 Visual Booking Chart
+
+The application now features an intuitive weekly booking chart that provides a clear overview of accommodation schedules:
+
+### Key Features
+- **Weekly Calendar View**: Monday-to-Sunday layout showing the entire week at a glance
+- **Time Slot Organization**: Three daily sessions (Morning, Midday, Evening) displayed in a grid format
+- **Status Color Coding**:
+  - 🟡 **Yellow**: Pending bookings awaiting approval
+  - 🟢 **Green**: Approved bookings confirmed for use
+  - 🔴 **Red**: Rejected booking applications
+- **Interactive Navigation**: 
+  - Previous/Next week arrows for browsing different time periods
+  - "Today" button to quickly return to current week
+  - Current day highlighting for easy reference
+- **Booking Details**: Each booking shows user name, room, and status at a glance
+- **Click-to-Book**: Empty time slots can be clicked to initiate booking creation
+- **Responsive Design**: Optimized for both desktop and mobile devices
+
+### Usage
+1. Navigate to the Dashboard after logging in
+2. Scroll down to view the "Weekly Booking Schedule"
+3. Use navigation controls to browse different weeks
+4. Click on any booking to view details or on empty slots to create new bookings
+
 ## 🏠 Features
 
 ### Current Implementation (MVP)
@@ -156,6 +182,12 @@ Weekly limits are configurable per property with shared time pools between users
 - ✅ Time allocation tracking
 - ✅ JWT-based API authentication
 - ✅ Responsive web interface
+- ✅ **Visual Weekly Booking Chart** (New!)
+  - Monday-to-Sunday calendar view
+  - Interactive time slots (Morning, Midday, Evening)
+  - Color-coded booking status (Pending/Approved/Rejected)
+  - Week navigation with today highlighting
+  - Click-to-book functionality
 
 ### Planned Features
 
@@ -208,5 +240,5 @@ For support and questions:
 ## 🚦 Project Status
 
 **Current Phase**: MVP Development ✅  
-**Version**: 0.1.0  
-**Status**: Development Complete - Ready for Testing
+**Version**: 0.2.0  
+**Status**: Enhanced with Visual Booking Chart - Ready for Testing
