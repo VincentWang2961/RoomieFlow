@@ -504,6 +504,162 @@ def get_rooms():
         'rooms': [{'id': r.id, 'name': r.name, 'property_id': r.property_id} for r in rooms]
     }), 200
 
+# Add TimeAllocation model since it's not in simple_app.py yet
+class TimeAllocation(db.Model):
+    __tablename__ = 'time_allocations'
+    
+    id = db.Column(db.String(36), primary_key=True)
+    property_id = db.Column(db.String(36), nullable=False)
+    weekly_limit_days = db.Column(db.Float, nullable=False, default=7.0)
+    morning_duration = db.Column(db.Float, nullable=False, default=0.5)
+    midday_duration = db.Column(db.Float, nullable=False, default=1.0)
+    evening_duration = db.Column(db.Float, nullable=False, default=1.0)
+    reset_day_of_week = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def get_session_duration(self, session_type):
+        duration_map = {
+            'morning': self.morning_duration,
+            'midday': self.midday_duration,
+            'evening': self.evening_duration
+        }
+        return duration_map.get(session_type, 0.0)
+
+@app.route('/api/usage/weekly', methods=['GET'])
+@jwt_required()
+def get_weekly_usage():
+    """Get weekly usage statistics for current user"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get week start date
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # Monday of current week
+    
+    week_start_param = request.args.get('week_start')
+    if week_start_param:
+        try:
+            week_start = datetime.strptime(week_start_param, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    week_end = week_start + timedelta(days=6)
+    
+    # Get all user's bookings for this week
+    user_bookings = db.session.query(BookingApplication).filter(
+        BookingApplication.user_id == current_user_id,
+        BookingApplication.booking_date >= week_start,
+        BookingApplication.booking_date <= week_end,
+        BookingApplication.status.in_(['approved', 'pending'])
+    ).all()
+    
+    # Calculate usage by property
+    property_usage = {}
+    total_usage = 0.0
+    
+    for booking in user_bookings:
+        room = Room.query.get(booking.room_id)
+        if not room:
+            continue
+            
+        property_id = room.property_id
+        if property_id not in property_usage:
+            property_obj = Property.query.get(property_id)
+            property_usage[property_id] = {
+                'property_name': property_obj.name if property_obj else 'Unknown',
+                'approved_usage': 0.0,
+                'pending_usage': 0.0,
+                'total_usage': 0.0,
+                'weekly_limit': 7.0,
+                'bookings': []
+            }
+            
+            # Get time allocation for this property
+            time_alloc = TimeAllocation.query.filter_by(property_id=property_id).first()
+            if time_alloc:
+                property_usage[property_id]['weekly_limit'] = time_alloc.weekly_limit_days
+        
+        # Calculate duration
+        duration = booking.duration_value
+        property_usage[property_id]['bookings'].append({
+            'id': booking.id,
+            'date': booking.booking_date.isoformat(),
+            'session': booking.session_type,
+            'status': booking.status,
+            'duration': duration,
+            'notes': booking.notes
+        })
+        
+        if booking.status == 'approved':
+            property_usage[property_id]['approved_usage'] += duration
+        elif booking.status == 'pending':
+            property_usage[property_id]['pending_usage'] += duration
+        
+        property_usage[property_id]['total_usage'] += duration
+        total_usage += duration
+    
+    # Calculate warnings and usage percentages
+    usage_summary = {
+        'week_start': week_start.isoformat(),
+        'week_end': week_end.isoformat(),
+        'total_usage': total_usage,
+        'property_breakdown': [],
+        'warnings': [],
+        'overall_status': 'normal'
+    }
+    
+    for prop_id, usage_data in property_usage.items():
+        weekly_limit = usage_data['weekly_limit']
+        total_usage_prop = usage_data['total_usage']
+        usage_percentage = (total_usage_prop / weekly_limit) * 100 if weekly_limit > 0 else 0
+        
+        status = 'normal'
+        if usage_percentage >= 100:
+            status = 'exceeded'
+        elif usage_percentage >= 80:
+            status = 'warning'
+        elif usage_percentage >= 60:
+            status = 'caution'
+        
+        property_summary = {
+            'property_id': prop_id,
+            'property_name': usage_data['property_name'],
+            'approved_usage': usage_data['approved_usage'],
+            'pending_usage': usage_data['pending_usage'],
+            'total_usage': total_usage_prop,
+            'weekly_limit': weekly_limit,
+            'usage_percentage': round(usage_percentage, 1),
+            'remaining_days': max(0, weekly_limit - total_usage_prop),
+            'status': status,
+            'bookings': usage_data['bookings']
+        }
+        
+        usage_summary['property_breakdown'].append(property_summary)
+        
+        # Add warnings
+        if status == 'exceeded':
+            usage_summary['warnings'].append({
+                'type': 'exceeded',
+                'message': f"Weekly limit exceeded for {usage_data['property_name']} ({usage_percentage:.1f}%)",
+                'property_id': prop_id
+            })
+            usage_summary['overall_status'] = 'exceeded'
+        elif status == 'warning':
+            usage_summary['warnings'].append({
+                'type': 'warning',
+                'message': f"Approaching weekly limit for {usage_data['property_name']} ({usage_percentage:.1f}%)",
+                'property_id': prop_id
+            })
+            if usage_summary['overall_status'] == 'normal':
+                usage_summary['overall_status'] = 'warning'
+    
+    return jsonify(usage_summary), 200
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

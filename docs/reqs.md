@@ -1,10 +1,10 @@
 # Accommodation Scheduling Management System Requirements
 
 ## 🚦 Implementation Status
-**Current Phase**: Property Management Enhancement ✅ COMPLETED  
-**Version**: 0.3.0  
+**Current Phase**: Usage Tracking & Visualization ✅ COMPLETED  
+**Version**: 0.4.0  
 **Last Updated**: 2025-09-01  
-**Status**: Enhanced Property Management with CRUD Operations - Ready for Production
+**Status**: Complete Usage Tracking with Warnings and Limits - Ready for Production
 
 ### ✅ Completed Features
 - Complete backend API with Flask and SQLAlchemy
@@ -30,12 +30,19 @@
   - Property listing with grid layout and statistics
   - Owner permissions and access control
   - Property details view with room information
+- **Usage Tracking & Visualization (v0.4.0)**
+  - Weekly usage calculation with property breakdown
+  - Visual progress bars and usage statistics
+  - Smart warning system (caution, warning, exceeded states)
+  - Real-time usage monitoring with approved/pending breakdown
+  - Interactive week navigation and booking details
+  - Color-coded status indicators and alerts
 
 ### ⏳ Future Enhancements
 - Email notification system
-- Usage warnings and limits visualization
 - Calendar integration
 - Mobile app development
+- User invitation system for property access
 
 ### 📊 Visual Booking Chart ✅ COMPLETED (v0.2.0)
 - ✅ **Weekly Booking Calendar**: Interactive visual chart displaying booking schedule
@@ -99,11 +106,13 @@ A lightweight, web-based accommodation scheduling management system designed for
 - ✅ Application status tracking (pending, approved, rejected)
 - ⏳ Notification system for application updates (FUTURE)
 
-### Time Tracking and Monitoring ⏳ PARTIALLY COMPLETED
-- ✅ Real-time calculation of weekly time usage (backend logic ready)
+### Time Tracking and Monitoring ✅ COMPLETED (v0.4.0)
+- ✅ Real-time calculation of weekly time usage with property breakdown
 - ✅ Shared time pool management between users
-- ⏳ Usage warnings when approaching or exceeding weekly limits (frontend needed)
-- ⏳ Non-enforced overtime allowance with warning notifications (frontend needed)
+- ✅ Usage warnings when approaching or exceeding weekly limits
+- ✅ Visual progress bars and status indicators
+- ✅ Interactive usage dashboard with booking details
+- ✅ Non-enforced overtime tracking with clear warning notifications
 
 ## Technical Requirements
 

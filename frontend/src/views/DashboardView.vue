@@ -67,6 +67,12 @@
           </div>
         </div>
 
+        <!-- Usage Tracking -->
+        <div class="card">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Usage Tracking</h3>
+          <UsageTracker @weekChange="handleWeekChange" />
+        </div>
+
         <!-- Weekly Booking Chart -->
         <div class="card">
           <WeeklyBookingChart />
@@ -81,11 +87,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import WeeklyBookingChart from '@/components/WeeklyBookingChart.vue'
+import UsageTracker from '@/components/UsageTracker.vue'
 
 export default {
   name: 'DashboardView',
   components: {
-    WeeklyBookingChart
+    WeeklyBookingChart,
+    UsageTracker
   },
   setup() {
     const router = useRouter()
@@ -103,6 +111,11 @@ export default {
       router.push('/login')
     }
     
+    const handleWeekChange = (weekStart) => {
+      // Can be used to sync week changes between components
+      console.log('Week changed to:', weekStart)
+    }
+    
     onMounted(() => {
       // TODO: Load dashboard statistics
     })
@@ -110,7 +123,8 @@ export default {
     return {
       user,
       stats,
-      handleLogout
+      handleLogout,
+      handleWeekChange
     }
   }
 }

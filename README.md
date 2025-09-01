@@ -124,7 +124,8 @@ A lightweight, web-based accommodation scheduling management system designed for
 - `GET /api/bookings/{id}` - Get booking details
 - `PUT /api/bookings/{id}/approve` - Approve booking
 - `PUT /api/bookings/{id}/reject` - Reject booking
-- `GET /api/bookings/weekly` - Get weekly booking chart data (New!)
+- `GET /api/bookings/weekly` - Get weekly booking chart data
+- `GET /api/usage/weekly` - Get weekly usage statistics and warnings (New!)
 
 ## 🔧 Configuration
 
@@ -188,12 +189,19 @@ The application now features an intuitive weekly booking chart that provides a c
   - Color-coded booking status (Pending/Approved/Rejected)
   - Week navigation with today highlighting
   - Click-to-book functionality
-- ✅ **Enhanced Property Management** (New!)
+- ✅ **Enhanced Property Management**
   - Complete CRUD operations for properties
   - User-friendly property creation and editing
   - Property listing with statistics and owner permissions
   - Modal-based forms for better UX
   - Responsive grid layout for property cards
+- ✅ **Usage Tracking & Visualization** (New!)
+  - Weekly usage calculation with property breakdown
+  - Visual progress bars and usage statistics
+  - Smart warning system (caution, warning, exceeded states)
+  - Real-time usage monitoring with approved/pending breakdown
+  - Interactive week navigation and collapsible booking details
+  - Color-coded status indicators and automated alerts
 
 ### Planned Features
 
@@ -245,6 +253,6 @@ For support and questions:
 
 ## 🚦 Project Status
 
-**Current Phase**: Property Management Enhancement ✅  
-**Version**: 0.3.0  
-**Status**: Enhanced Property Management with CRUD Operations - Ready for Production
+**Current Phase**: Usage Tracking & Visualization ✅  
+**Version**: 0.4.0  
+**Status**: Complete Usage Tracking with Warnings and Limits - Ready for Production
