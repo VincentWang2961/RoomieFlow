@@ -275,9 +275,9 @@ def get_weekly_bookings():
         'bookings': booking_data,
         'session_types': ['morning', 'midday', 'evening'],
         'session_labels': {
-            'morning': 'Morning (0.5 day)',
-            'midday': 'Midday (1 day)',
-            'evening': 'Evening (1 day)'
+            'morning': 'Morning',
+            'midday': 'Midday', 
+            'evening': 'Evening'
         }
     }), 200
 
