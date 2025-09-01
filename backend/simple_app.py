@@ -284,11 +284,211 @@ def get_weekly_bookings():
 @app.route('/api/properties', methods=['GET'])
 @jwt_required()
 def get_properties():
-    """Get properties for dropdown/filter"""
-    properties = Property.query.filter_by(is_active=True).all()
+    """Get properties for current user"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get properties where user is owner or member
+    if user.role == 'admin':
+        properties = Property.query.filter_by(is_active=True).all()
+    else:
+        # For regular users, get properties they own or are members of
+        owned_properties = Property.query.filter_by(owner_id=current_user_id, is_active=True).all()
+        # TODO: Add member properties when PropertyMember model is implemented
+        properties = owned_properties
+    
+    property_data = []
+    for prop in properties:
+        # Get room count for each property
+        room_count = Room.query.filter_by(property_id=prop.id, is_active=True).count()
+        
+        property_data.append({
+            'id': prop.id,
+            'name': prop.name,
+            'description': prop.description,
+            'owner_id': prop.owner_id,
+            'room_count': room_count,
+            'created_at': prop.created_at.isoformat() if prop.created_at else None,
+            'is_owner': prop.owner_id == current_user_id
+        })
+    
     return jsonify({
-        'properties': [{'id': p.id, 'name': p.name} for p in properties]
+        'properties': property_data
     }), 200
+
+@app.route('/api/properties', methods=['POST'])
+@jwt_required()
+def create_property():
+    """Create a new property"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    name = data.get('name', '').strip()
+    description = data.get('description', '').strip()
+    
+    if not name:
+        return jsonify({'error': 'Property name is required'}), 400
+    
+    # Check for duplicate property name for this user
+    existing_property = Property.query.filter_by(
+        owner_id=current_user_id,
+        name=name,
+        is_active=True
+    ).first()
+    
+    if existing_property:
+        return jsonify({'error': 'Property with this name already exists'}), 400
+    
+    try:
+        property_obj = Property(
+            id=str(uuid.uuid4()),
+            name=name,
+            description=description,
+            owner_id=current_user_id
+        )
+        
+        db.session.add(property_obj)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Property created successfully',
+            'property': {
+                'id': property_obj.id,
+                'name': property_obj.name,
+                'description': property_obj.description,
+                'owner_id': property_obj.owner_id,
+                'room_count': 0,
+                'created_at': property_obj.created_at.isoformat(),
+                'is_owner': True
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create property'}), 500
+
+@app.route('/api/properties/<property_id>', methods=['GET'])
+@jwt_required()
+def get_property_details(property_id):
+    """Get detailed property information"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    property_obj = Property.query.filter_by(id=property_id, is_active=True).first()
+    
+    if not property_obj:
+        return jsonify({'error': 'Property not found'}), 404
+    
+    # Check if user has access to this property
+    if user.role != 'admin' and property_obj.owner_id != current_user_id:
+        # TODO: Check PropertyMember access when implemented
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get rooms for this property
+    rooms = Room.query.filter_by(property_id=property_id, is_active=True).all()
+    room_data = []
+    for room in rooms:
+        room_data.append({
+            'id': room.id,
+            'name': room.name,
+            'capacity': room.capacity,
+            'description': room.description,
+            'created_at': room.created_at.isoformat() if room.created_at else None
+        })
+    
+    # Get owner information
+    owner = User.query.get(property_obj.owner_id)
+    
+    return jsonify({
+        'property': {
+            'id': property_obj.id,
+            'name': property_obj.name,
+            'description': property_obj.description,
+            'owner_id': property_obj.owner_id,
+            'owner_username': owner.username if owner else 'Unknown',
+            'created_at': property_obj.created_at.isoformat() if property_obj.created_at else None,
+            'is_owner': property_obj.owner_id == current_user_id,
+            'rooms': room_data
+        }
+    }), 200
+
+@app.route('/api/properties/<property_id>', methods=['PUT'])
+@jwt_required()
+def update_property(property_id):
+    """Update property information"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    property_obj = Property.query.filter_by(id=property_id, is_active=True).first()
+    
+    if not property_obj:
+        return jsonify({'error': 'Property not found'}), 404
+    
+    # Check if user has permission to update
+    if user.role != 'admin' and property_obj.owner_id != current_user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    name = data.get('name', '').strip()
+    description = data.get('description', '').strip()
+    
+    if not name:
+        return jsonify({'error': 'Property name is required'}), 400
+    
+    # Check for duplicate name (excluding current property)
+    existing_property = Property.query.filter(
+        Property.id != property_id,
+        Property.owner_id == property_obj.owner_id,
+        Property.name == name,
+        Property.is_active == True
+    ).first()
+    
+    if existing_property:
+        return jsonify({'error': 'Property with this name already exists'}), 400
+    
+    try:
+        property_obj.name = name
+        property_obj.description = description
+        
+        db.session.commit()
+        
+        room_count = Room.query.filter_by(property_id=property_id, is_active=True).count()
+        
+        return jsonify({
+            'message': 'Property updated successfully',
+            'property': {
+                'id': property_obj.id,
+                'name': property_obj.name,
+                'description': property_obj.description,
+                'owner_id': property_obj.owner_id,
+                'room_count': room_count,
+                'created_at': property_obj.created_at.isoformat() if property_obj.created_at else None,
+                'is_owner': property_obj.owner_id == current_user_id
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update property'}), 500
 
 @app.route('/api/rooms', methods=['GET'])
 @jwt_required()

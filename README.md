@@ -182,12 +182,18 @@ The application now features an intuitive weekly booking chart that provides a c
 - ✅ Time allocation tracking
 - ✅ JWT-based API authentication
 - ✅ Responsive web interface
-- ✅ **Visual Weekly Booking Chart** (New!)
+- ✅ **Visual Weekly Booking Chart**
   - Monday-to-Sunday calendar view
   - Interactive time slots (Morning, Midday, Evening)
   - Color-coded booking status (Pending/Approved/Rejected)
   - Week navigation with today highlighting
   - Click-to-book functionality
+- ✅ **Enhanced Property Management** (New!)
+  - Complete CRUD operations for properties
+  - User-friendly property creation and editing
+  - Property listing with statistics and owner permissions
+  - Modal-based forms for better UX
+  - Responsive grid layout for property cards
 
 ### Planned Features
 
@@ -239,6 +245,6 @@ For support and questions:
 
 ## 🚦 Project Status
 
-**Current Phase**: MVP Development ✅  
-**Version**: 0.2.1  
-**Status**: Mobile-Optimized Booking Chart - Ready for Testing
+**Current Phase**: Property Management Enhancement ✅  
+**Version**: 0.3.0  
+**Status**: Enhanced Property Management with CRUD Operations - Ready for Production
