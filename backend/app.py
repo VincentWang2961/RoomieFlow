@@ -26,26 +26,6 @@ def create_app():
     migrate.init_app(app, db)
     CORS(app)
     
-    # Import models
-    from app.models.user import User
-    from app.models.property import Property
-    from app.models.room import Room
-    from app.models.booking import BookingApplication
-    from app.models.time_allocation import TimeAllocation
-    
-    # Register blueprints
-    from app.routes.auth import auth_bp
-    from app.routes.users import users_bp
-    from app.routes.properties import properties_bp
-    from app.routes.rooms import rooms_bp
-    from app.routes.bookings import bookings_bp
-    
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(users_bp, url_prefix='/api/users')
-    app.register_blueprint(properties_bp, url_prefix='/api/properties')
-    app.register_blueprint(rooms_bp, url_prefix='/api/rooms')
-    app.register_blueprint(bookings_bp, url_prefix='/api/bookings')
-    
     @app.route('/api/health')
     def health_check():
         return {'status': 'healthy', 'message': 'RoomieFlow API is running'}

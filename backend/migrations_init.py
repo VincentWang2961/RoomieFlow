@@ -4,16 +4,17 @@ Database initialization script for RoomieFlow
 This script creates the database tables and sets up the initial schema
 """
 
-from app import create_app, db
-from app.models.user import User
-from app.models.property import Property, PropertyMember
-from app.models.room import Room
-from app.models.booking import BookingApplication
-from app.models.time_allocation import TimeAllocation
+import app as app_module
+from app_package.models.user import User
+from app_package.models.property import Property, PropertyMember
+from app_package.models.room import Room
+from app_package.models.booking import BookingApplication
+from app_package.models.time_allocation import TimeAllocation
 
 def init_db():
     """Initialize the database with tables."""
-    app = create_app()
+    app = app_module.create_app()
+    db = app_module.db
     
     with app.app_context():
         # Create all tables
