@@ -240,5 +240,5 @@ For support and questions:
 ## 🚦 Project Status
 
 **Current Phase**: MVP Development ✅  
-**Version**: 0.2.0  
-**Status**: Enhanced with Visual Booking Chart - Ready for Testing
+**Version**: 0.2.1  
+**Status**: Mobile-Optimized Booking Chart - Ready for Testing

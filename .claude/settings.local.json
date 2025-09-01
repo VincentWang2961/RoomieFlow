@@ -9,7 +9,8 @@
       "Bash(python:*)",
       "Bash(FLASK_APP=app.py FLASK_ENV=development DATABASE_URL=sqlite:///roomieflow.db flask run --host=0.0.0.0 --port=5000)",
       "Bash(npm run dev:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

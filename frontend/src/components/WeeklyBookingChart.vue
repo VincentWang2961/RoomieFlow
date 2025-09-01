@@ -51,68 +51,169 @@
       <div class="text-red-800">{{ error }}</div>
     </div>
 
-    <!-- Booking Chart -->
+    <!-- Mobile View (screens < 768px) -->
     <div v-else class="booking-chart">
-      <!-- Chart Header -->
-      <div class="grid grid-cols-8 gap-2 mb-4">
-        <div class="text-sm font-medium text-gray-500 text-center">Time</div>
-        <div 
-          v-for="day in weekData.week_days" 
-          :key="day.date"
-          class="text-sm font-medium text-center"
-          :class="[
-            day.is_today ? 'text-primary-600 font-semibold' : 'text-gray-700'
-          ]"
-        >
-          <div>{{ day.day_short }}</div>
-          <div class="text-xs text-gray-500">{{ formatDate(day.date) }}</div>
+      <!-- Desktop/Tablet View (screens >= 768px) -->
+      <div class="hidden md:block">
+        <!-- Chart Header -->
+        <div class="grid grid-cols-8 gap-2 mb-4">
+          <div class="text-sm font-medium text-gray-500 text-center">Time</div>
+          <div 
+            v-for="day in weekData.week_days" 
+            :key="day.date"
+            class="text-sm font-medium text-center"
+            :class="[
+              day.is_today ? 'text-primary-600 font-semibold' : 'text-gray-700'
+            ]"
+          >
+            <div>{{ day.day_short }}</div>
+            <div class="text-xs text-gray-500">{{ formatDate(day.date) }}</div>
+          </div>
+        </div>
+
+        <!-- Time Sessions -->
+        <div class="space-y-2">
+          <div 
+            v-for="session in weekData.session_types" 
+            :key="session"
+            class="grid grid-cols-8 gap-2"
+          >
+            <!-- Session label -->
+            <div class="flex items-center justify-center py-3 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg">
+              {{ getSessionLabel(session) }}
+            </div>
+            
+            <!-- Daily slots for this session -->
+            <div 
+              v-for="day in weekData.week_days" 
+              :key="`${day.date}-${session}`"
+              class="booking-slot min-h-[80px] border-2 border-gray-200 rounded-lg p-2 hover:border-gray-300 transition-colors cursor-pointer"
+              :class="[
+                day.is_today ? 'border-primary-200 bg-primary-50' : 'bg-white',
+                getSlotBookings(day.date, session).length > 0 ? 'border-blue-300' : ''
+              ]"
+              @click="onSlotClick(day.date, session)"
+            >
+              <!-- Bookings in this slot -->
+              <div 
+                v-for="booking in getSlotBookings(day.date, session)" 
+                :key="booking.id"
+                class="booking-item text-xs rounded-lg p-2 mb-1 border-l-4"
+                :class="getBookingClasses(booking.status)"
+              >
+                <div class="font-medium">{{ booking.user }}</div>
+                <div class="text-gray-600">{{ booking.room_name }}</div>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="status-badge px-2 py-1 rounded-full text-xs font-medium"
+                        :class="getStatusBadgeClasses(booking.status)">
+                    {{ capitalizeFirst(booking.status) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Empty slot message -->
+              <div v-if="getSlotBookings(day.date, session).length === 0" 
+                   class="text-gray-400 text-xs text-center py-6">
+                Click to book
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Time Sessions -->
-      <div class="space-y-2">
-        <div 
-          v-for="session in weekData.session_types" 
-          :key="session"
-          class="grid grid-cols-8 gap-2"
-        >
-          <!-- Session label -->
-          <div class="flex items-center justify-center py-3 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg">
-            {{ getSessionLabel(session) }}
-          </div>
-          
-          <!-- Daily slots for this session -->
+      <!-- Mobile View (screens < 768px) -->
+      <div class="md:hidden">
+        <!-- Mobile Day Cards -->
+        <div class="space-y-4">
           <div 
             v-for="day in weekData.week_days" 
-            :key="`${day.date}-${session}`"
-            class="booking-slot min-h-[80px] border-2 border-gray-200 rounded-lg p-2 hover:border-gray-300 transition-colors cursor-pointer"
+            :key="day.date"
+            class="mobile-day-card border border-gray-200 rounded-lg overflow-hidden"
             :class="[
-              day.is_today ? 'border-primary-200 bg-primary-50' : 'bg-white',
-              getSlotBookings(day.date, session).length > 0 ? 'border-blue-300' : ''
+              day.is_today ? 'border-primary-300 bg-primary-50' : 'bg-white'
             ]"
-            @click="onSlotClick(day.date, session)"
           >
-            <!-- Bookings in this slot -->
-            <div 
-              v-for="booking in getSlotBookings(day.date, session)" 
-              :key="booking.id"
-              class="booking-item text-xs rounded-lg p-2 mb-1 border-l-4"
-              :class="getBookingClasses(booking.status)"
-            >
-              <div class="font-medium">{{ booking.user }}</div>
-              <div class="text-gray-600">{{ booking.room_name }}</div>
-              <div class="flex items-center justify-between mt-1">
-                <span class="status-badge px-2 py-1 rounded-full text-xs font-medium"
-                      :class="getStatusBadgeClasses(booking.status)">
-                  {{ capitalizeFirst(booking.status) }}
-                </span>
+            <!-- Day Header -->
+            <div class="day-header px-4 py-3 border-b border-gray-200"
+                 :class="[
+                   day.is_today ? 'bg-primary-100 border-primary-200' : 'bg-gray-50'
+                 ]">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-semibold text-gray-900"
+                      :class="[day.is_today ? 'text-primary-800' : '']">
+                    {{ day.day_name }}
+                  </h3>
+                  <p class="text-sm text-gray-600">{{ formatMobileDate(day.date) }}</p>
+                </div>
+                <div v-if="day.is_today" class="px-2 py-1 bg-primary-600 text-white text-xs font-medium rounded-full">
+                  Today
+                </div>
               </div>
             </div>
-            
-            <!-- Empty slot message -->
-            <div v-if="getSlotBookings(day.date, session).length === 0" 
-                 class="text-gray-400 text-xs text-center py-6">
-              Click to book
+
+            <!-- Time Sessions for this day -->
+            <div class="sessions-container">
+              <div 
+                v-for="session in weekData.session_types" 
+                :key="`mobile-${day.date}-${session}`"
+                class="session-row border-b border-gray-100 last:border-b-0"
+              >
+                <!-- Session Header -->
+                <div class="session-header px-4 py-2 bg-gray-25 border-b border-gray-100">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">
+                      {{ getSessionLabel(session) }}
+                    </span>
+                    <button 
+                      @click="onSlotClick(day.date, session)"
+                      class="text-xs px-2 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      v-if="getSlotBookings(day.date, session).length === 0"
+                    >
+                      + Book
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Session Content -->
+                <div class="session-content px-4 py-3">
+                  <!-- Bookings for this session -->
+                  <div 
+                    v-if="getSlotBookings(day.date, session).length > 0"
+                    class="space-y-2"
+                  >
+                    <div 
+                      v-for="booking in getSlotBookings(day.date, session)" 
+                      :key="booking.id"
+                      class="mobile-booking-item p-3 rounded-lg border-l-4"
+                      :class="getBookingClasses(booking.status)"
+                    >
+                      <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                          <div class="font-medium text-sm text-gray-900 truncate">
+                            {{ booking.user }}
+                          </div>
+                          <div class="text-sm text-gray-600 truncate">
+                            {{ booking.room_name }}
+                          </div>
+                          <div v-if="booking.notes" class="text-xs text-gray-500 mt-1 truncate">
+                            {{ booking.notes }}
+                          </div>
+                        </div>
+                        <span class="ml-2 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                              :class="getStatusBadgeClasses(booking.status)">
+                          {{ capitalizeFirst(booking.status) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Empty slot -->
+                  <div v-else class="text-center py-4">
+                    <p class="text-gray-400 text-sm">No bookings</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -219,6 +320,11 @@ export default {
       return date.getDate().toString()
     }
 
+    const formatMobileDate = (dateStr) => {
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+
     const getSessionLabel = (session) => {
       return weekData.value.session_labels[session] || session
     }
@@ -277,6 +383,7 @@ export default {
       goToCurrentWeek,
       formatWeekRange,
       formatDate,
+      formatMobileDate,
       getSessionLabel,
       getSlotBookings,
       getBookingClasses,
@@ -293,6 +400,7 @@ export default {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Desktop/Tablet Styles */
 .booking-slot {
   min-height: 80px;
   transition: all 0.2s ease;
@@ -315,13 +423,104 @@ export default {
   font-size: 0.65rem;
 }
 
-@media (max-width: 768px) {
+/* Mobile Styles */
+.mobile-day-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.mobile-day-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.day-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.session-header {
+  background-color: #fafafa;
+}
+
+.mobile-booking-item {
+  background-color: #fefefe;
+  transition: all 0.2s ease;
+}
+
+.mobile-booking-item:hover {
+  transform: translateX(2px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive improvements */
+@media (max-width: 767px) {
   .weekly-booking-chart {
-    overflow-x: auto;
+    margin: -1rem;
+    padding: 1rem;
   }
   
-  .booking-chart {
-    min-width: 600px;
+  .mobile-day-card {
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+  }
+  
+  .session-content {
+    min-height: auto;
+  }
+  
+  .mobile-booking-item {
+    border-radius: 0.375rem;
+  }
+  
+  /* Improve touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better text sizing for mobile */
+  .text-xs {
+    font-size: 0.75rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .weekly-booking-chart {
+    margin: -0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .day-header {
+    padding: 0.75rem;
+  }
+  
+  .session-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .session-content {
+    padding: 0.75rem;
+  }
+  
+  .mobile-booking-item {
+    padding: 0.75rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .booking-slot {
+    min-height: 70px;
+  }
+  
+  .grid-cols-8 {
+    gap: 0.25rem;
   }
 }
 </style>
