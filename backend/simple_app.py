@@ -179,5 +179,5 @@ if __name__ == '__main__':
             db.session.commit()
             print("Admin user created (username: admin, password: admin123)")
     
-    print("Starting server on http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("Starting server on http://localhost:5001")
+    app.run(debug=True, host='0.0.0.0', port=5001)
